@@ -30,6 +30,7 @@ Implementation Notes
 """
 
 import struct
+import time
 
 from adafruit_bus_device import i2c_device
 from micropython import const
@@ -127,14 +128,18 @@ class MMA8451:
             raise RuntimeError("Failed to find MMA8451, check wiring!")
         # Reset and wait for chip to be ready.
         self._write_u8(_MMA8451_REG_CTRL_REG2, 0x40)
-        while True:
+        attempts = 10
+        while attempts:
+            attempts -= 1
             try:
                 if not self._read_u8(_MMA8451_REG_CTRL_REG2) & 0x40 > 0:
                     # Continue if chip is ready
                     break
             # Ignore OSError. After reset the device may fail to respond
-            except OSError:
-                pass
+            except OSError as e:
+                time.sleep(0.001)
+                if not attempts:
+                    raise e
         # Enable 4G range.
         self._write_u8(_MMA8451_REG_XYZ_DATA_CFG, RANGE_4G)
         # High resolution mode.
