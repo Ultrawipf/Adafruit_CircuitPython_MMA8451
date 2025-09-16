@@ -127,8 +127,12 @@ class MMA8451:
             raise RuntimeError("Failed to find MMA8451, check wiring!")
         # Reset and wait for chip to be ready.
         self._write_u8(_MMA8451_REG_CTRL_REG2, 0x40)
-        while self._read_u8(_MMA8451_REG_CTRL_REG2) & 0x40 > 0:
-            pass
+        while True:
+            try:
+                if not self._read_u8(_MMA8451_REG_CTRL_REG2) & 0x40 > 0:
+                    break # Continue if chip is ready
+            except OSError as e: # Ignore OSError. After reset the device may fail to respond
+                pass
         # Enable 4G range.
         self._write_u8(_MMA8451_REG_XYZ_DATA_CFG, RANGE_4G)
         # High resolution mode.
